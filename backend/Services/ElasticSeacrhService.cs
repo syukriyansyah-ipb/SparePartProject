@@ -1,7 +1,7 @@
 using Elastic.Clients.Elasticsearch;
 using Elastic.Transport;
 
-namespace MitsubishiApi.Services;
+namespace AutoPartsApi.Services;
 
 public class ElasticSearchService
 {

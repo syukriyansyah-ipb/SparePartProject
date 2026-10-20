@@ -1,4 +1,4 @@
-namespace MitsubishiApi.Models
+namespace AutoPartsApi.Models
 {
     public class VehicleModel
     {
@@ -13,5 +13,6 @@ namespace MitsubishiApi.Models
 
         // Navigation property for the related Vehicle entities = 1 model banyak vehicles
         public ICollection<Vehicle> Vehicles { get; set; } = new List<Vehicle>();
+        public ICollection<Part> CompatibleParts { get; set; } = new List<Part>();
     }
 }

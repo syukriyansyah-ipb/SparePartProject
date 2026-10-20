@@ -1,13 +1,13 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using MitsubishiApi.Data;
-using MitsubishiApi.Dtos;
-using MitsubishiApi.Models;
+using AutoPartsApi.Data;
+using AutoPartsApi.Dtos;
+using AutoPartsApi.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Caching.Distributed;
 using System.Text.Json;
 
-namespace MitsubishiApi.Controllers;
+namespace AutoPartsApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]

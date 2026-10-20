@@ -1,4 +1,4 @@
-namespace MitsubishiApi.Dtos;
+namespace AutoPartsApi.Dtos;
 
 //respon sederhana untuk list
 public class VehicleSimpleDto

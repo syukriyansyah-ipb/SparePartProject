@@ -5,15 +5,15 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using MitsubishiApi.Data;
+using AutoPartsApi.Data;
 
 #nullable disable
 
-namespace MitsubishiApi.Migrations
+namespace AutoPartsApi.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20261010211750_AddServiceBookingTable")]
-    partial class AddServiceBookingTable
+    [Migration("20261019041504_InitialSpareParts")]
+    partial class InitialSpareParts
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -25,7 +25,7 @@ namespace MitsubishiApi.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("MitsubishiApi.Models.Customer", b =>
+            modelBuilder.Entity("AutoPartsApi.Models.Customer", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -57,12 +57,17 @@ namespace MitsubishiApi.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int?>("UserId")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("UserId");
 
                     b.ToTable("Customers");
                 });
 
-            modelBuilder.Entity("MitsubishiApi.Models.Dealer", b =>
+            modelBuilder.Entity("AutoPartsApi.Models.Dealer", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -107,146 +112,13 @@ namespace MitsubishiApi.Migrations
                     b.ToTable("Dealers");
                 });
 
-            modelBuilder.Entity("MitsubishiApi.Models.Mechanic", b =>
+            modelBuilder.Entity("AutoPartsApi.Models.Part", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Certification")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("DealerId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("EmployeeCode")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("FullName")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("IsAvailable")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("Phone")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Specialization")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("DealerId");
-
-                    b.ToTable("Mechanics");
-                });
-
-            modelBuilder.Entity("MitsubishiApi.Models.ServiceBooking", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<decimal?>("ActualCost")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<string>("AdvisorNotes")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("BookingCode")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<DateOnly>("BookingDate")
-                        .HasColumnType("date");
-
-                    b.Property<TimeOnly>("BookingTime")
-                        .HasColumnType("time");
-
-                    b.Property<string>("ComplaintNotes")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("CustomerId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("CustomerNotes")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("DealerId")
-                        .HasColumnType("int");
-
-                    b.Property<decimal>("EstimatedCost")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<int?>("KmAtService")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("MechanicId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("ServiceTypeId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("VehicleId")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("BookingCode")
-                        .IsUnique();
-
-                    b.HasIndex("CustomerId");
-
-                    b.HasIndex("MechanicId");
-
-                    b.HasIndex("ServiceTypeId");
-
-                    b.HasIndex("VehicleId");
-
-                    b.HasIndex("DealerId", "BookingDate");
-
-                    b.ToTable("ServiceBookings");
-                });
-
-            modelBuilder.Entity("MitsubishiApi.Models.ServiceType", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Category")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Code")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
@@ -254,12 +126,76 @@ namespace MitsubishiApi.Migrations
                     b.Property<string>("Description")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<decimal>("EstimatedCost")
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("MinimumStock")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("PartCategoryId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("PartNumber")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<decimal>("Price")
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
-                    b.Property<int>("EstimatedDuration")
+                    b.Property<string>("RackLocation")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Stock")
                         .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PartCategoryId");
+
+                    b.HasIndex("PartNumber")
+                        .IsUnique();
+
+                    b.ToTable("Parts");
+                });
+
+            modelBuilder.Entity("AutoPartsApi.Models.PartCategory", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("PartCategories");
+                });
+
+            modelBuilder.Entity("AutoPartsApi.Models.Supplier", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Address")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ContactPerson")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
@@ -268,12 +204,15 @@ namespace MitsubishiApi.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("Phone")
+                        .HasColumnType("nvarchar(max)");
+
                     b.HasKey("Id");
 
-                    b.ToTable("ServiceTypes");
+                    b.ToTable("Suppliers");
                 });
 
-            modelBuilder.Entity("MitsubishiApi.Models.User", b =>
+            modelBuilder.Entity("AutoPartsApi.Models.User", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -283,6 +222,9 @@ namespace MitsubishiApi.Migrations
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
+
+                    b.Property<int?>("DealerId")
+                        .HasColumnType("int");
 
                     b.Property<string>("Email")
                         .IsRequired()
@@ -302,10 +244,12 @@ namespace MitsubishiApi.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("DealerId");
+
                     b.ToTable("Users");
                 });
 
-            modelBuilder.Entity("MitsubishiApi.Models.Vehicle", b =>
+            modelBuilder.Entity("AutoPartsApi.Models.Vehicle", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -317,7 +261,16 @@ namespace MitsubishiApi.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int>("CurrentKm")
+                        .HasColumnType("int");
+
                     b.Property<int>("CustomerId")
+                        .HasColumnType("int");
+
+                    b.Property<DateOnly?>("LastServiceDate")
+                        .HasColumnType("date");
+
+                    b.Property<int?>("LastServiceKm")
                         .HasColumnType("int");
 
                     b.Property<string>("LicensePlate")
@@ -347,7 +300,7 @@ namespace MitsubishiApi.Migrations
                     b.ToTable("Vehicles");
                 });
 
-            modelBuilder.Entity("MitsubishiApi.Models.VehicleModel", b =>
+            modelBuilder.Entity("AutoPartsApi.Models.VehicleModel", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -383,68 +336,59 @@ namespace MitsubishiApi.Migrations
                     b.ToTable("VehicleModels");
                 });
 
-            modelBuilder.Entity("MitsubishiApi.Models.Mechanic", b =>
+            modelBuilder.Entity("PartVehicleModel", b =>
                 {
-                    b.HasOne("MitsubishiApi.Models.Dealer", "Dealer")
+                    b.Property<int>("CompatiblePartsId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("CompatibleVehiclesId")
+                        .HasColumnType("int");
+
+                    b.HasKey("CompatiblePartsId", "CompatibleVehiclesId");
+
+                    b.HasIndex("CompatibleVehiclesId");
+
+                    b.ToTable("PartCompatibleVehicles", (string)null);
+                });
+
+            modelBuilder.Entity("AutoPartsApi.Models.Customer", b =>
+                {
+                    b.HasOne("AutoPartsApi.Models.User", "User")
                         .WithMany()
-                        .HasForeignKey("DealerId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .HasForeignKey("UserId");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("AutoPartsApi.Models.Part", b =>
+                {
+                    b.HasOne("AutoPartsApi.Models.PartCategory", "PartCategory")
+                        .WithMany("Parts")
+                        .HasForeignKey("PartCategoryId")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.Navigation("PartCategory");
+                });
+
+            modelBuilder.Entity("AutoPartsApi.Models.User", b =>
+                {
+                    b.HasOne("AutoPartsApi.Models.Dealer", "Dealer")
+                        .WithMany()
+                        .HasForeignKey("DealerId");
 
                     b.Navigation("Dealer");
                 });
 
-            modelBuilder.Entity("MitsubishiApi.Models.ServiceBooking", b =>
+            modelBuilder.Entity("AutoPartsApi.Models.Vehicle", b =>
                 {
-                    b.HasOne("MitsubishiApi.Models.Customer", "Customer")
-                        .WithMany()
-                        .HasForeignKey("CustomerId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("MitsubishiApi.Models.Dealer", "Dealer")
-                        .WithMany()
-                        .HasForeignKey("DealerId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("MitsubishiApi.Models.Mechanic", "Mechanic")
-                        .WithMany()
-                        .HasForeignKey("MechanicId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("MitsubishiApi.Models.ServiceType", "ServiceType")
-                        .WithMany()
-                        .HasForeignKey("ServiceTypeId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("MitsubishiApi.Models.Vehicle", "Vehicle")
-                        .WithMany()
-                        .HasForeignKey("VehicleId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Customer");
-
-                    b.Navigation("Dealer");
-
-                    b.Navigation("Mechanic");
-
-                    b.Navigation("ServiceType");
-
-                    b.Navigation("Vehicle");
-                });
-
-            modelBuilder.Entity("MitsubishiApi.Models.Vehicle", b =>
-                {
-                    b.HasOne("MitsubishiApi.Models.Customer", "Customer")
+                    b.HasOne("AutoPartsApi.Models.Customer", "Customer")
                         .WithMany("Vehicles")
                         .HasForeignKey("CustomerId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("MitsubishiApi.Models.VehicleModel", "VehicleModel")
+                    b.HasOne("AutoPartsApi.Models.VehicleModel", "VehicleModel")
                         .WithMany("Vehicles")
                         .HasForeignKey("VehicleModelId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -455,12 +399,32 @@ namespace MitsubishiApi.Migrations
                     b.Navigation("VehicleModel");
                 });
 
-            modelBuilder.Entity("MitsubishiApi.Models.Customer", b =>
+            modelBuilder.Entity("PartVehicleModel", b =>
+                {
+                    b.HasOne("AutoPartsApi.Models.Part", null)
+                        .WithMany()
+                        .HasForeignKey("CompatiblePartsId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("AutoPartsApi.Models.VehicleModel", null)
+                        .WithMany()
+                        .HasForeignKey("CompatibleVehiclesId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("AutoPartsApi.Models.Customer", b =>
                 {
                     b.Navigation("Vehicles");
                 });
 
-            modelBuilder.Entity("MitsubishiApi.Models.VehicleModel", b =>
+            modelBuilder.Entity("AutoPartsApi.Models.PartCategory", b =>
+                {
+                    b.Navigation("Parts");
+                });
+
+            modelBuilder.Entity("AutoPartsApi.Models.VehicleModel", b =>
                 {
                     b.Navigation("Vehicles");
                 });

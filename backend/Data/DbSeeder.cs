@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
-using MitsubishiApi.Models;
+using AutoPartsApi.Models;
 
-namespace MitsubishiApi.Data;
+namespace AutoPartsApi.Data;
 
 public static class DbSeeder
 {
@@ -25,11 +25,6 @@ public static class DbSeeder
         await SeedVehicleModelsAsync(db, logger);
 
         // ============================================================
-        // 4. SERVICE TYPES
-        // ============================================================
-        await SeedServiceTypesAsync(db, logger);
-
-        // ============================================================
         // 5. CUSTOMERS
         // ============================================================
         await SeedCustomersAsync(db, logger);
@@ -40,14 +35,14 @@ public static class DbSeeder
         await SeedVehiclesAsync(db, logger);
 
         // ============================================================
-        // 7. MECHANICS
-        // ============================================================
-        await SeedMechanicsAsync(db, logger);
-
-        // ============================================================
         // 8. USER STAFF (Service Advisors)
         // ============================================================
         await SeedStaffUsersAsync(db, logger);
+
+        // ============================================================
+        // 9. PARTS (BARU)
+        // ============================================================
+        await SeedPartsAsync(db, logger);
 
         logger.LogInformation("🌱 Database seeding completed");
     }
@@ -57,7 +52,7 @@ public static class DbSeeder
     // ============================================================
     private static async Task SeedSuperAdminAsync(AppDbContext db, ILogger logger)
     {
-        var adminEmail = "admin@mitsubishi.com";
+        var adminEmail = "admin@AutoParts.com";
         var existing = await db.Users.FirstOrDefaultAsync(u => u.Email == adminEmail);
 
         if (existing == null)
@@ -94,24 +89,24 @@ public static class DbSeeder
             new()
             {
                 Code = "MTR-JKT-01",
-                Name = "Mitsubishi Jakarta Selatan",
+                Name = "AutoParts Jakarta Selatan",
                 Address = "Jl. TB Simatupang No. 10",
                 City = "Jakarta",
                 Province = "DKI Jakarta",
                 Phone = "021-12345678",
-                Email = "jkt-selatan@mitsubishi.co.id",
+                Email = "jkt-selatan@AutoParts.co.id",
                 MaxSlotPerDay = 25,
                 IsActive = true
             },
             new()
             {
                 Code = "MTR-BDG-01",
-                Name = "Mitsubishi Bandung",
+                Name = "AutoParts Bandung",
                 Address = "Jl. Asia Afrika No. 100",
                 City = "Bandung",
                 Province = "Jawa Barat",
                 Phone = "022-87654321",
-                Email = "bandung@mitsubishi.co.id",
+                Email = "bandung@AutoParts.co.id",
                 MaxSlotPerDay = 15,
                 IsActive = true
             }
@@ -141,26 +136,6 @@ public static class DbSeeder
         db.VehicleModels.AddRange(models);
         await db.SaveChangesAsync();
         logger.LogInformation($"  ✅ {models.Count} vehicle models seeded");
-    }
-
-    // ============================================================
-    // 4. SERVICE TYPES
-    // ============================================================
-    private static async Task SeedServiceTypesAsync(AppDbContext db, ILogger logger)
-    {
-        if (await db.ServiceTypes.AnyAsync()) return;
-
-        var types = new List<ServiceType>
-        {
-            new() { Code = "PERIODIC-10K", Name = "Servis Berkala 10.000 KM", Description = "Ganti oli, filter oli, cek rem, cek kelistrikan", Category = "Periodic", EstimatedDuration = 90,  EstimatedCost = 750_000,  IsActive = true },
-            new() { Code = "PERIODIC-20K", Name = "Servis Berkala 20.000 KM", Description = "Servis 10K + ganti filter udara + tune up", Category = "Periodic", EstimatedDuration = 120, EstimatedCost = 1_200_000, IsActive = true },
-            new() { Code = "REPAIR-BRAKE", Name = "Perbaikan Sistem Rem",     Description = "Ganti kampas rem, bleeding, cek minyak rem", Category = "Repair",   EstimatedDuration = 180, EstimatedCost = 850_000,  IsActive = true },
-            new() { Code = "EMERGENCY-TOW",Name = "Layanan Darurat & Towing", Description = "Layanan panggilan darurat di jalan", Category = "Emergency", EstimatedDuration = 240, EstimatedCost = 500_000,  IsActive = true }
-        };
-
-        db.ServiceTypes.AddRange(types);
-        await db.SaveChangesAsync();
-        logger.LogInformation($"  ✅ {types.Count} service types seeded");
     }
 
     // ============================================================
@@ -216,34 +191,6 @@ public static class DbSeeder
     }
 
     // ============================================================
-    // 7. MECHANICS
-    // ============================================================
-    private static async Task SeedMechanicsAsync(AppDbContext db, ILogger logger)
-    {
-        if (await db.Mechanics.AnyAsync()) return;
-
-        var jkt = await db.Dealers.FirstOrDefaultAsync(d => d.Code == "MTR-JKT-01");
-        var bdg = await db.Dealers.FirstOrDefaultAsync(d => d.Code == "MTR-BDG-01");
-
-        if (jkt == null || bdg == null)
-        {
-            logger.LogWarning("  ⚠️ Cannot seed mechanics - missing dealers");
-            return;
-        }
-
-        var mechanics = new List<Mechanic>
-        {
-            new() { EmployeeCode = "MEC-JKT-001", FullName = "Ahmad Sutrisno",   DealerId = jkt.Id, Specialization = "Engine",     Certification = "Mitsubishi Certified Level 2", Phone = "081111111111", IsAvailable = true, IsActive = true },
-            new() { EmployeeCode = "MEC-JKT-002", FullName = "Bambang Hartono",  DealerId = jkt.Id, Specialization = "Electrical", Certification = "Mitsubishi Certified Level 1", Phone = "081222222222", IsAvailable = true, IsActive = true },
-            new() { EmployeeCode = "MEC-BDG-001", FullName = "Cecep Supriadi",   DealerId = bdg.Id, Specialization = "Body & Paint",Certification = "Mitsubishi Certified Level 3", Phone = "081333333333", IsAvailable = true, IsActive = true }
-        };
-
-        db.Mechanics.AddRange(mechanics);
-        await db.SaveChangesAsync();
-        logger.LogInformation($"  ✅ {mechanics.Count} mechanics seeded");
-    }
-
-    // ============================================================
     // 8. STAFF USERS (Service Advisors)
     // ============================================================
     private static async Task SeedStaffUsersAsync(AppDbContext db, ILogger logger)
@@ -259,8 +206,8 @@ public static class DbSeeder
 
         var staff = new List<User>
         {
-            new() { Email = "sa.jkt@mitsubishi.co.id", PasswordHash = BCrypt.Net.BCrypt.HashPassword("Password123!"), FullName = "Adi Nugroho",     Role = "ServiceAdvisor", DealerId = jkt.Id },
-            new() { Email = "sa.bdg@mitsubishi.co.id", PasswordHash = BCrypt.Net.BCrypt.HashPassword("Password123!"), FullName = "Bambang Setiawan", Role = "ServiceAdvisor", DealerId = bdg.Id }
+            new() { Email = "sa.jkt@AutoParts.co.id", PasswordHash = BCrypt.Net.BCrypt.HashPassword("Password123!"), FullName = "Adi Nugroho",     Role = "ServiceAdvisor", DealerId = jkt.Id },
+            new() { Email = "sa.bdg@AutoParts.co.id", PasswordHash = BCrypt.Net.BCrypt.HashPassword("Password123!"), FullName = "Bambang Setiawan", Role = "ServiceAdvisor", DealerId = bdg.Id }
         };
 
         var newCount = 0;
@@ -278,5 +225,44 @@ public static class DbSeeder
             await db.SaveChangesAsync();
             logger.LogInformation($"  ✅ {newCount} staff users seeded");
         }
+    }
+
+        // ============================================================
+    // 9. PART CATEGORIES & PARTS (BARU)
+    // ============================================================
+    private static async Task SeedPartsAsync(AppDbContext db, ILogger logger)
+    {
+        if (await db.PartCategories.AnyAsync()) return;
+
+        var categories = new List<PartCategory>
+        {
+            new() { Name = "Oli & Cairan", Description = "Oli mesin, oli gardan, minyak rem" },
+            new() { Name = "Filter", Description = "Filter oli, filter udara, filter AC" },
+            new() { Name = "Sistem Rem", Description = "Kampas rem, cakram, kaliper" },
+            new() { Name = "Kelistrikan", Description = "Busi, aki, lampu" }
+        };
+        db.PartCategories.AddRange(categories);
+        await db.SaveChangesAsync();
+
+        // Ambil data model mobil untuk relasi
+        var xpander = await db.VehicleModels.FirstOrDefaultAsync(m => m.Code == "XPANDER-2023");
+
+        var parts = new List<Part>
+        {
+            new() { PartNumber = "OIL-MT-01", Name = "Oli Mesin AutoParts 4L", Price = 350000, Stock = 50, MinimumStock = 10, PartCategoryId = categories[0].Id },
+            new() { PartNumber = "FLT-OL-02", Name = "Filter Oli Xpander", Price = 85000, Stock = 120, MinimumStock = 20, PartCategoryId = categories[1].Id },
+            new() { PartNumber = "BRK-PD-03", Name = "Kampas Rem Depan Xpander", Price = 450000, Stock = 15, MinimumStock = 5, PartCategoryId = categories[2].Id }
+        };
+
+        // Tambahkan relasi kompatibilitas (Filter Oli cocok untuk Xpander)
+        if (xpander != null)
+        {
+            parts[1].CompatibleVehicles.Add(xpander);
+            parts[2].CompatibleVehicles.Add(xpander);
+        }
+
+        db.Parts.AddRange(parts);
+        await db.SaveChangesAsync();
+        logger.LogInformation($"  ✅ {parts.Count} spare parts seeded");
     }
 }

@@ -2,11 +2,11 @@ using Elastic.Clients.Elasticsearch;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using MitsubishiApi.Data;
-using MitsubishiApi.Dtos;
-using MitsubishiApi.Services;
+using AutoPartsApi.Data;
+using AutoPartsApi.Dtos;
+using AutoPartsApi.Services;
 
-namespace MitsubishiApi.Controllers;
+namespace AutoPartsApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]

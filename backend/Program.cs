@@ -1,9 +1,9 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using MitsubishiApi.Data;
-using MitsubishiApi.Services;
-using MitsubishiApi.Models;
+using AutoPartsApi.Data;
+using AutoPartsApi.Services;
+using AutoPartsApi.Models;
 using Scalar.AspNetCore;
 using System.Text;
 using Hangfire;
@@ -37,14 +37,12 @@ builder.Services.AddHangfire(config =>
 
 builder.Services.AddHangfireServer();
 
-// Register ReminderService
-builder.Services.AddScoped<ReminderService>();
 
 // Redis
 builder.Services.AddStackExchangeRedisCache(options =>
 {
     options.Configuration = builder.Configuration.GetConnectionString("Redis");
-    options.InstanceName = "MitsubishiApi:";
+    options.InstanceName = "AutoPartsApi:";
 });
 
 // Elasticsearch
@@ -77,7 +75,6 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 builder.Services.AddAuthorization();
 
-builder.Services.AddScoped<InvoicePdfService>();
 
 // CORS
 // CORS
@@ -156,15 +153,7 @@ using (var scope = app.Services.CreateScope())
 {
     var recurringJobManager = scope.ServiceProvider.GetRequiredService<IRecurringJobManager>();
 
-    recurringJobManager.AddOrUpdate<ReminderService>(
-        "generate-reminders",
-        service => service.GenerateRemindersAsync(),
-        Cron.Daily(8, 0));
-
-    recurringJobManager.AddOrUpdate<ReminderService>(
-        "send-reminders",
-        service => service.SendPendingRemindersAsync(),
-        Cron.Daily(9, 0));
+    
 
     Console.WriteLine("✅ Hangfire recurring jobs registered");
 }

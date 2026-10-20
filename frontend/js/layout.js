@@ -18,14 +18,11 @@ var DEALER_NAME = localStorage.getItem('dealerName') || '';
 /* ===== MENU per ROLE ===== */
 function getNavItems() {
     var all = [
-        { href: 'dashboard.html',       label: 'Kendaraan',        icon: 'k-i-car',       key: 'dashboard', roles: ['SuperAdmin','DealerAdmin','ServiceAdvisor','Mechanic','Customer'] },
-        { href: 'bookings.html',        label: 'Booking Servis',   icon: 'k-i-calendar',  key: 'bookings',  roles: ['SuperAdmin','DealerAdmin','ServiceAdvisor','Customer'] },
-        { href: 'customers.html',       label: 'Customer',         icon: 'k-i-user',      key: 'customers', roles: ['SuperAdmin','DealerAdmin','ServiceAdvisor'] },
-        { href: 'service-history.html', label: 'Riwayat Servis',   icon: 'k-i-clipboard', key: 'history',   roles: ['SuperAdmin','DealerAdmin','ServiceAdvisor','Mechanic','Customer'] },
-        { href: 'invoices.html',        label: 'Invoice',          icon: 'k-i-dollar',    key: 'invoices',  roles: ['SuperAdmin','DealerAdmin','ServiceAdvisor'] },
-        { href: 'users.html',           label: 'Kelola User',      icon: 'k-i-gear',      key: 'users',     roles: ['SuperAdmin','DealerAdmin'] },
-        { href: 'reminders.html', label: 'Reminder Servis', icon: 'k-i-bell', key: 'reminders', roles: ['SuperAdmin','DealerAdmin','ServiceAdvisor'] },
-        { href: 'analytics.html', label: 'Analytics', icon: 'k-i-chart-line', key: 'analytics', roles: ['SuperAdmin','DealerAdmin','ServiceAdvisor'] },
+        { href: 'dashboard.html',       label: 'Dashboard',        icon: 'k-i-chart-line',key: 'dashboard', roles: ['SuperAdmin','DealerAdmin','ServiceAdvisor'] },
+        { href: 'parts.html',           label: 'Suku Cadang',      icon: 'k-i-box',       key: 'parts',     roles: ['SuperAdmin','DealerAdmin','ServiceAdvisor'] },
+        { href: 'categories.html',      label: 'Kategori',         icon: 'k-i-folder',    key: 'categories',roles: ['SuperAdmin','DealerAdmin'] },
+        { href: 'suppliers.html',       label: 'Supplier',         icon: 'k-i-truck',     key: 'suppliers', roles: ['SuperAdmin','DealerAdmin'] },
+        { href: 'users.html',           label: 'Kelola User',      icon: 'k-i-gear',      key: 'users',     roles: ['SuperAdmin','DealerAdmin'] }
     ];
     return all.filter(function (i) { return i.roles.indexOf(ROLE) !== -1; });
 }
@@ -117,7 +114,7 @@ function buildSidebar(activeKey) {
                     '<span class="mark-diamond d3"></span>' +
                 '</div>' +
                 '<div class="brand-text">' +
-                    '<div class="brand-name">MITSUBISHI</div>' +
+                    '<div class="brand-name">AutoParts</div>' +
                     '<div class="brand-sub">Service Booking</div>' +
                 '</div>' +
             '</div>' +
@@ -165,7 +162,7 @@ function renderLayout(activeKey, title, subtitle) {
             '</main>' +
         '</div>';
     $('#page-root').replaceWith(layoutHtml);
-    if (title) document.title = title + ' — Mitsubishi Service';
+    if (title) document.title = title + ' — AutoParts Service';
 }
 
 function setTopbarActions(html) {

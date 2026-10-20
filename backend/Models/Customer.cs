@@ -1,4 +1,4 @@
-namespace MitsubishiApi.Models;
+namespace AutoPartsApi.Models;
 
 public class Customer
 {

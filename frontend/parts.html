@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Suku Cadang - AutoParts Parts</title>
+    
+    <!-- 1. JQUERY HARUS DIMUAT PERTAMA KALI -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    
+    <!-- 2. KENDO UI CSS & JS -->
+    <link rel="stylesheet" href="https://kendo.cdn.telerik.com/themes/14.5.0/default/default-main.css" />
+    <script src="https://kendo.cdn.telerik.com/2026.3.811/js/kendo.all.min.js"></script>
+    
+    <!-- 3. CSS CUSTOM KITA -->
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- Container utama tempat layout.js akan menyuntikkan Sidebar -->
+<div id="page-root">
+    <!-- Toolbar Atas -->
+    <div class="toolbar">
+        <label>Cari Part:</label>
+        <input id="searchInput" placeholder="Nama atau Kode Part..." style="width: 250px;">
+        <button class="btn btn-primary" id="btnSearch">🔍 Cari</button>
+        
+        <label style="margin-left: 20px;">Filter:</label>
+        <input id="filterLowStock" style="width: 180px;">
+
+        <div class="toolbar-spacer"></div>
+        <button class="btn btn-success" id="btnNewPart">➕ Tambah Part</button>
+    </div>
+    
+    <!-- Tabel Kendo Grid -->
+    <div id="gridParts"></div>
+</div>
+
+<!-- Dialog/Modal Tambah Part -->
+<div id="dlgNewPart">
+    <div class="form-row">
+        <div class="form-group">
+            <label>Kode Part (Part Number)</label>
+            <input id="pNumber" type="text" placeholder="Contoh: OIL-MT-01">
+        </div>
+        <div class="form-group">
+            <label>Nama Suku Cadang</label>
+            <input id="pName" type="text" placeholder="Contoh: Filter Oli Xpander">
+        </div>
+    </div>
+    <div class="form-row">
+        <div class="form-group">
+            <label>Kategori</label>
+            <input id="pCategory">
+        </div>
+        <div class="form-group">
+            <label>Harga (Rp)</label>
+            <input id="pPrice" type="number">
+        </div>
+    </div>
+    <div class="form-row">
+        <div class="form-group">
+            <label>Stok Awal</label>
+            <input id="pStock" type="number" value="0">
+        </div>
+        <div class="form-group">
+            <label>Batas Minimum Stok (Alert)</label>
+            <input id="pMinStock" type="number" value="5">
+        </div>
+    </div>
+</div>
+
+<!-- Load layout.js (berisi fungsi renderLayout, apiCall, dll) -->
+<script src="js/layout.js"></script>
+
+<!-- Script Logika Halaman Parts -->
+<script>
+$(function () {
+    // Render Sidebar & Topbar
+    renderLayout('parts', 'Manajemen Suku Cadang', 'Kelola stok dan harga sparepart AutoParts');
+
+    // ==========================================
+    // 1. INISIALISASI FILTER DROPDOWN DULU
+    // ==========================================
+    $('#filterLowStock').kendoDropDownList({
+        dataSource: [
+            { text: 'Semua Stok', value: '' },
+            { text: '⚠️ Stok Menipis (Alert)', value: 'low' }
+        ],
+        dataTextField: 'text',
+        dataValueField: 'value',
+        change: function() { 
+            // Refresh grid saat filter berubah
+            var grid = $("#gridParts").data("kendoGrid");
+            if (grid) grid.dataSource.read(); 
+        }
+    });
+
+    // ==========================================
+    // 2. INISIALISASI DATASOURCE GRID
+    // ==========================================
+    var ds = new kendo.data.DataSource({
+        transport: {
+            read: function (opts) {
+                var q = $('#searchInput').val().trim();
+                
+                // Ambil nilai filter dengan aman
+                var filterWidget = $('#filterLowStock').data('kendoDropDownList');
+                var lowStock = filterWidget ? filterWidget.value() : '';
+                
+                var url = API_URL + '/parts?';
+                if (q) url += 'search=' + encodeURIComponent(q) + '&';
+                if (lowStock === 'low') url += 'lowStock=true';
+
+                apiCall(url, 'GET', null, function (data) {
+                    opts.success(data);
+                }, function(err) {
+                    opts.error(err);
+                    showToast('error', 'Gagal mengambil data dari server');
+                });
+            }
+        },
+        pageSize: 15,
+        schema: { model: { id: 'id' } }
+    });
+
+    // ==========================================
+    // 3. INISIALISASI KENDO GRID
+    // ==========================================
+    $('#gridParts').kendoGrid($.extend(defaultGridOptions(), {
+        dataSource: ds,
+        columns: [
+            { field: 'partNumber', title: 'Kode Part', width: 130, template: '<strong>#= partNumber #</strong>' },
+            { field: 'name', title: 'Nama Suku Cadang', width: 200 },
+            { field: 'partCategory.name', title: 'Kategori', width: 130 },
+            { field: 'price', title: 'Harga', width: 120, template: 'Rp #= kendo.toString(price, "N0") #' },
+            { 
+                field: 'stock', title: 'Stok Saat Ini', width: 100,
+                template: function(data) {
+                    var color = data.stock <= data.minimumStock ? '#dc2626' : '#16a34a';
+                    return '<span style="color:' + color + '; font-weight:bold;">' + data.stock + '</span>';
+                }
+            },
+            { 
+                field: 'minimumStock', title: 'Min. Stok', width: 90, 
+                template: function(data) {
+                    return '<span style="color:#6b7280;">' + data.minimumStock + '</span>';
+                }
+            },
+            { 
+                title: 'Aksi', width: 150, filterable: false, sortable: false,
+                template: function(data) {
+                    return '<button class="btn btn-primary btn-sm" onclick="updateStock(' + data.id + ', \'' + data.name + '\')">Update Stok</button>';
+                }
+            }
+        ]
+    }));
+
+    // Event tombol pencarian
+    $('#btnSearch').on('click', function () { ds.read(); });
+    $('#searchInput').on('keypress', function (e) { if (e.which === 13) ds.read(); });
+
+    // ==========================================
+    // 4. LOGIKA MODAL TAMBAH PART
+    // ==========================================
+    var dlg = $('#dlgNewPart').kendoDialog({
+        title: 'Tambah Suku Cadang Baru',
+        width: 600,
+        modal: true,
+        visible: false,
+        actions: [
+            { text: 'Batal' },
+            { text: 'Simpan', primary: true, action: submitPart }
+        ]
+    }).data('kendoDialog');
+
+    $('#btnNewPart').on('click', function () {
+        // Inisialisasi Dropdown Kategori
+        var $cat = $('#pCategory');
+        if (!$cat.data('kendoDropDownList')) {
+            $cat.kendoDropDownList({ 
+                dataTextField: 'name', 
+                dataValueField: 'id',
+                optionLabel: "Pilih Kategori..."
+            });
+        }
+        
+        // Ambil data kategori terbaru dari API
+        apiCall(API_URL + '/partcategories', 'GET', null, function(cats) {
+            $cat.data('kendoDropDownList').setDataSource(cats);
+        });
+
+        // Reset Form
+        $('#pNumber').val('');
+        $('#pName').val('');
+        $('#pPrice').val('');
+        $('#pStock').val('0');
+        $('#pMinStock').val('5');
+        if($cat.data('kendoDropDownList')) $cat.data('kendoDropDownList').value('');
+        
+        dlg.open();
+    });
+
+    function submitPart() {
+        var catWidget = $('#pCategory').data('kendoDropDownList');
+        if (!catWidget || !catWidget.value()) {
+            showToast('error', 'Pilih Kategori terlebih dahulu!');
+            return false; // Cegah dialog tertutup
+        }
+
+        var data = {
+            partNumber: $('#pNumber').val(),
+            name: $('#pName').val(),
+            partCategoryId: parseInt(catWidget.value()),
+            price: parseFloat($('#pPrice').val() || 0),
+            stock: parseInt($('#pStock').val() || 0),
+            minimumStock: parseInt($('#pMinStock').val() || 0)
+        };
+
+        if(!data.partNumber || !data.name) {
+            showToast('error', 'Lengkapi Kode dan Nama Part!');
+            return false;
+        }
+
+        // Kirim ke API
+        apiCall(API_URL + '/parts', 'POST', data, function() {
+            showToast('success', 'Suku cadang berhasil ditambahkan');
+            ds.read(); // Refresh Grid
+        }, function(err) {
+            showToast('error', err.responseJSON?.message || 'Gagal menambah part');
+        });
+        
+        return true; // Tutup dialog jika berhasil
+    }
+});
+
+// ==========================================
+// 5. FUNGSI GLOBAL UPDATE STOK
+// ==========================================
+window.updateStock = function(id, name) {
+    kendo.prompt('Masukkan jumlah (contoh: 10 untuk masuk, -5 untuk keluar):', "0").then(function(qty) {
+        if (!qty) return;
+        
+        var number = parseInt(qty);
+        if (isNaN(number)) {
+            showToast('error', 'Input harus berupa angka');
+            return;
+        }
+
+        // Panggil API PATCH untuk update stok
+        apiCall(API_URL + '/parts/' + id + '/stock', 'PATCH', number, function(res) {
+            showToast('success', 'Stok ' + name + ' diperbarui. Total: ' + res.currentStock);
+            $('#gridParts').data('kendoGrid').dataSource.read();
+        }, function(err) {
+            showToast('error', err.responseJSON?.message || 'Gagal update stok');
+        });
+    });
+}
+</script>
+</body>
+</html>

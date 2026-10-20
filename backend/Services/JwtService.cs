@@ -2,9 +2,9 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using Microsoft.IdentityModel.Tokens;
-using MitsubishiApi.Models;
+using AutoPartsApi.Models;
 
-namespace MitsubishiApi.Services;
+namespace AutoPartsApi.Services;
 
 public class JwtService
 {

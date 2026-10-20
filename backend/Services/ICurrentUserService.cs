@@ -1,4 +1,4 @@
-namespace MitsubishiApi.Services;
+namespace AutoPartsApi.Services;
 
 public interface ICurrentUserService
 {

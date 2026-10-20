@@ -1,4 +1,4 @@
-namespace MitsubishiApi.Dtos;
+namespace AutoPartsApi.Dtos;
 
 // ==== RESPONSE ====
 public class ServiceBookingDto

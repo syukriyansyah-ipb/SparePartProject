@@ -1,11 +1,9 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using MitsubishiApi.Data;
-using MitsubishiApi.Dtos;
-using MitsubishiApi.Services;
+using AutoPartsApi.Data;
 
-namespace MitsubishiApi.Controllers;
+namespace AutoPartsApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
@@ -13,175 +11,64 @@ namespace MitsubishiApi.Controllers;
 public class AnalyticsController : ControllerBase
 {
     private readonly AppDbContext _db;
-    private readonly ICurrentUserService _currentUser;
 
-    public AnalyticsController(AppDbContext db, ICurrentUserService currentUser)
+    public AnalyticsController(AppDbContext db)
     {
         _db = db;
-        _currentUser = currentUser;
     }
 
-    // ==========================================================
-    // GET /api/analytics/summary — KPI utama
-    // ==========================================================
+    // 1. Ambil data KPI (Total Item, Nilai Aset, Stok Kritis)
     [HttpGet("summary")]
-    public async Task<ActionResult<AnalyticsSummaryDto>> GetSummary()
+    public async Task<IActionResult> GetSummary()
     {
-        var bookings = _db.ServiceBookings.AsQueryable();
-        var invoices = _db.Invoices.AsQueryable();
+        var activeParts = await _db.Parts.Where(p => p.IsActive).ToListAsync();
 
-        // Auto-filter by dealer untuk staff
-        if (!_currentUser.IsSuperAdmin && _currentUser.DealerId.HasValue)
+        var totalItems = activeParts.Count;
+        var totalValue = activeParts.Sum(p => p.Price * p.Stock);
+        var lowStockCount = activeParts.Count(p => p.Stock <= p.MinimumStock);
+
+        return Ok(new
         {
-            var dealerId = _currentUser.DealerId.Value;
-            bookings = bookings.Where(b => b.DealerId == dealerId);
-            invoices = invoices.Where(i => _db.ServiceHistories
-                .Any(h => h.Id == i.ServiceHistoryId && h.DealerId == dealerId));
-        }
-
-        var summary = new AnalyticsSummaryDto
-        {
-            TotalBookings = await bookings.CountAsync(),
-            CompletedBookings = await bookings.CountAsync(b => b.Status == "Completed"),
-            PendingBookings = await bookings.CountAsync(b => b.Status == "Pending"),
-            CancelledBookings = await bookings.CountAsync(b => b.Status == "Cancelled"),
-            TotalRevenue = await invoices.Where(i => i.PaymentStatus == "Paid").SumAsync(i => (decimal?)i.TotalAmount) ?? 0,
-            UnpaidAmount = await invoices.Where(i => i.PaymentStatus != "Paid").SumAsync(i => (decimal?)i.TotalAmount) ?? 0,
-            TotalCustomers = await _db.Customers.CountAsync(),
-            TotalVehicles = await _db.Vehicles.CountAsync()
-        };
-
-        return Ok(summary);
+            TotalItems = totalItems,
+            TotalValue = totalValue,
+            LowStockCount = lowStockCount
+        });
     }
 
-    // ==========================================================
-    // GET /api/analytics/booking-trend?days=30
-    // ==========================================================
-    [HttpGet("booking-trend")]
-    public async Task<ActionResult<List<BookingTrendDto>>> GetBookingTrend([FromQuery] int days = 30)
+    // 2. Distribusi Barang per Kategori (Untuk Donut Chart)
+    [HttpGet("category-distribution")]
+    public async Task<IActionResult> GetCategoryDistribution()
     {
-        var startDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-days));
-        var query = _db.ServiceBookings.Where(b => b.BookingDate >= startDate);
-
-        if (!_currentUser.IsSuperAdmin && _currentUser.DealerId.HasValue)
-            query = query.Where(b => b.DealerId == _currentUser.DealerId.Value);
-
-        var data = await query
-            .GroupBy(b => b.BookingDate)
-            .Select(g => new BookingTrendDto
+        var data = await _db.PartCategories
+            .Select(c => new
             {
-                Date = g.Key.ToString("yyyy-MM-dd"),
-                Count = g.Count(),
-                Revenue = g.Where(b => b.ActualCost != null).Sum(b => b.ActualCost ?? 0)
+                CategoryName = c.Name,
+                ItemCount = c.Parts.Count(p => p.IsActive)
             })
-            .OrderBy(x => x.Date)
+            .Where(x => x.ItemCount > 0) // Hanya tampilkan kategori yang ada barangnya
             .ToListAsync();
 
         return Ok(data);
     }
 
-    // ==========================================================
-    // GET /api/analytics/dealer-revenue — SuperAdmin only
-    // ==========================================================
-    [HttpGet("dealer-revenue")]
-    public async Task<ActionResult<List<DealerRevenueDto>>> GetDealerRevenue()
+    // 3. Ambil Top 5 Barang dengan Stok Paling Menipis (Untuk Tabel Alert)
+    [HttpGet("critical-stock")]
+    public async Task<IActionResult> GetCriticalStock()
     {
-        var query = _db.Dealers
-            .Where(d => d.IsActive)
-            .Select(d => new DealerRevenueDto
+        var data = await _db.Parts
+            .Include(p => p.PartCategory)
+            .Where(p => p.IsActive && p.Stock <= p.MinimumStock)
+            .OrderBy(p => p.Stock) // Urutkan dari yang paling sedikit
+            .Take(5)
+            .Select(p => new
             {
-                DealerId = d.Id,
-                DealerName = d.Name,
-                BookingCount = _db.ServiceBookings.Count(b => b.DealerId == d.Id),
-                Revenue = _db.ServiceBookings
-                    .Where(b => b.DealerId == d.Id && b.Status == "Completed" && b.ActualCost != null)
-                    .Sum(b => b.ActualCost ?? 0)
+                p.Id,
+                p.PartNumber,
+                p.Name,
+                p.Stock,
+                p.MinimumStock,
+                CategoryName = p.PartCategory != null ? p.PartCategory.Name : "-"
             })
-            .OrderByDescending(d => d.Revenue);
-
-        // Dealer staff hanya lihat dealer sendiri
-        if (!_currentUser.IsSuperAdmin && _currentUser.DealerId.HasValue)
-            query = (IOrderedQueryable<DealerRevenueDto>)query.Where(d => d.DealerId == _currentUser.DealerId.Value);
-
-        var result = await query.ToListAsync();
-        return Ok(result);
-    }
-
-    // ==========================================================
-    // GET /api/analytics/status-distribution
-    // ==========================================================
-    [HttpGet("status-distribution")]
-    public async Task<ActionResult<List<StatusDistributionDto>>> GetStatusDistribution()
-    {
-        var query = _db.ServiceBookings.AsQueryable();
-
-        if (!_currentUser.IsSuperAdmin && _currentUser.DealerId.HasValue)
-            query = query.Where(b => b.DealerId == _currentUser.DealerId.Value);
-
-        var data = await query
-            .GroupBy(b => b.Status)
-            .Select(g => new StatusDistributionDto
-            {
-                Status = g.Key,
-                Count = g.Count()
-            })
-            .ToListAsync();
-
-        return Ok(data);
-    }
-
-    // ==========================================================
-    // GET /api/analytics/top-vehicles?limit=5
-    // ==========================================================
-    [HttpGet("top-vehicles")]
-    public async Task<ActionResult<List<TopVehicleDto>>> GetTopVehicles([FromQuery] int limit = 5)
-    {
-        var query = _db.ServiceHistories
-            .Include(h => h.Vehicle!).ThenInclude(v => v.VehicleModel)
-            .AsQueryable();
-
-        if (!_currentUser.IsSuperAdmin && _currentUser.DealerId.HasValue)
-            query = query.Where(h => h.DealerId == _currentUser.DealerId.Value);
-
-        var data = await query
-            .Where(h => h.Vehicle != null && h.Vehicle.VehicleModel != null)
-            .GroupBy(h => h.Vehicle!.VehicleModel!.Name)
-            .Select(g => new TopVehicleDto
-            {
-                VehicleModelName = g.Key,
-                ServiceCount = g.Count()
-            })
-            .OrderByDescending(x => x.ServiceCount)
-            .Take(limit)
-            .ToListAsync();
-
-        return Ok(data);
-    }
-
-    // ==========================================================
-    // GET /api/analytics/top-services
-    // ==========================================================
-    [HttpGet("top-services")]
-    public async Task<ActionResult<List<TopServiceTypeDto>>> GetTopServices([FromQuery] int limit = 5)
-    {
-        var query = _db.ServiceBookings
-            .Include(b => b.ServiceType)
-            .AsQueryable();
-
-        if (!_currentUser.IsSuperAdmin && _currentUser.DealerId.HasValue)
-            query = query.Where(b => b.DealerId == _currentUser.DealerId.Value);
-
-        var data = await query
-            .Where(b => b.ServiceType != null)
-            .GroupBy(b => b.ServiceType!.Name)
-            .Select(g => new TopServiceTypeDto
-            {
-                ServiceTypeName = g.Key,
-                BookingCount = g.Count(),
-                Revenue = g.Where(b => b.ActualCost != null).Sum(b => b.ActualCost ?? 0)
-            })
-            .OrderByDescending(x => x.BookingCount)
-            .Take(limit)
             .ToListAsync();
 
         return Ok(data);

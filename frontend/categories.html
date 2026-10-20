@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Kategori Suku Cadang</title>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <link rel="stylesheet" href="https://kendo.cdn.telerik.com/themes/14.5.0/default/default-main.css" />
+    <script src="https://kendo.cdn.telerik.com/2026.3.811/js/kendo.all.min.js"></script>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="page-root">
+    <div class="toolbar">
+        <div class="toolbar-spacer"></div>
+        <button class="btn btn-success" id="btnNew">➕ Tambah Kategori</button>
+    </div>
+    <div id="gridCategories"></div>
+</div>
+
+<!-- HAPUS style="display:none;" agar Kendo bisa merender form -->
+<div id="dlgForm">
+    <input type="hidden" id="cId" />
+    <div class="form-group">
+        <label>Nama Kategori</label>
+        <input id="cName" type="text" placeholder="Contoh: Oli & Cairan" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+    </div>
+    <div class="form-group">
+        <label>Deskripsi (Opsional)</label>
+        <input id="cDesc" type="text" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+    </div>
+</div>
+
+<script src="js/layout.js"></script>
+<script>
+$(function () {
+    renderLayout('categories', 'Kategori Suku Cadang', 'Kelompokkan sparepart berdasarkan jenisnya');
+
+    var ds = new kendo.data.DataSource({
+        transport: {
+            read: function (opts) {
+                apiCall(API_URL + '/partcategories', 'GET', null, function(data) { opts.success(data); });
+            }
+        },
+        pageSize: 10,
+        schema: { model: { id: 'id' } }
+    });
+
+    $('#gridCategories').kendoGrid($.extend(defaultGridOptions(), {
+        dataSource: ds,
+        columns: [
+            { field: 'name', title: 'Nama Kategori', width: 250 },
+            { field: 'description', title: 'Deskripsi' },
+            { 
+                title: 'Aksi', width: 200, filterable: false, sortable: false,
+                template: '<button class="btn btn-primary btn-sm" onclick="editCategory(#= id #, \'#= name #\', \'#= description || "" #\')" style="margin-right:5px;">Edit</button>' +
+                          '<button class="btn btn-danger btn-sm" onclick="deleteCategory(#= id #)">Hapus</button>'
+            }
+        ]
+    }));
+
+    var isEditMode = false;
+
+    // Inisialisasi Dialog
+    var dlg = $('#dlgForm').kendoDialog({
+        title: 'Form Kategori',
+        width: 450,
+        modal: true,
+        visible: false,
+        actions: [
+            { text: 'Batal' },
+            { text: 'Simpan', primary: true, action: saveCategory }
+        ]
+    }).data('kendoDialog');
+
+    $('#btnNew').on('click', function () {
+        isEditMode = false;
+        $('#dlgForm').data('kendoDialog').title('Tambah Kategori Baru');
+        $('#cId').val('');
+        $('#cName').val(''); 
+        $('#cDesc').val('');
+        dlg.open();
+    });
+
+    function saveCategory() {
+        var data = { 
+            name: $('#cName').val(), 
+            description: $('#cDesc').val() 
+        };
+        
+        if(!data.name) {
+            showToast('error', 'Nama Kategori wajib diisi');
+            return false;
+        }
+
+        var url = API_URL + '/partcategories';
+        var method = 'POST';
+
+        if (isEditMode) {
+            var id = $('#cId').val();
+            url += '/' + id;
+            method = 'PUT';
+        }
+
+        apiCall(url, method, data, function() {
+            showToast('success', isEditMode ? 'Kategori diperbarui' : 'Kategori ditambahkan');
+            ds.read();
+        }, function(err) {
+            showToast('error', err.responseJSON?.message || 'Gagal menyimpan data');
+        });
+
+        return true;
+    }
+
+    // Fungsi global untuk tombol Edit di Grid
+    window.editCategory = function(id, name, desc) {
+        isEditMode = true;
+        $('#dlgForm').data('kendoDialog').title('Edit Kategori');
+        $('#cId').val(id);
+        $('#cName').val(name);
+        $('#cDesc').val(desc);
+        dlg.open();
+    };
+});
+
+window.deleteCategory = function(id) {
+    if(confirm('Yakin ingin menghapus kategori ini?')) {
+        apiCall(API_URL + '/partcategories/' + id, 'DELETE', null, function() {
+            showToast('success', 'Kategori dihapus');
+            $('#gridCategories').data('kendoGrid').dataSource.read();
+        }, function(err) {
+            showToast('error', err.responseJSON?.message || 'Gagal menghapus');
+        });
+    }
+}
+</script>
+</body>
+</html>

@@ -1,6 +1,6 @@
 using System.Security.Claims;
 
-namespace MitsubishiApi.Services;
+namespace AutoPartsApi.Services;
 
 public class CurrentUserService : ICurrentUserService
 {

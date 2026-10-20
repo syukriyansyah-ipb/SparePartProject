@@ -1,10 +1,10 @@
-namespace MitsubishiApi.Models;
+namespace AutoPartsApi.Models;
 
 public class Dealer
 {
     public int Id { get; set; }
     public string Code { get; set; } = string.Empty;         // "MTR-JKT-01"
-    public string Name { get; set; } = string.Empty;         // "Mitsubishi Jakarta Selatan"
+    public string Name { get; set; } = string.Empty;         // "AutoParts Jakarta Selatan"
     public string? Address { get; set; }
     public string? City { get; set; }
     public string? Province { get; set; }

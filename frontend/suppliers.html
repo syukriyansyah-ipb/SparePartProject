@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Supplier Suku Cadang</title>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <link rel="stylesheet" href="https://kendo.cdn.telerik.com/themes/14.5.0/default/default-main.css" />
+    <script src="https://kendo.cdn.telerik.com/2026.3.811/js/kendo.all.min.js"></script>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="page-root">
+    <div class="toolbar">
+        <div class="toolbar-spacer"></div>
+        <button class="btn btn-success" id="btnNew">➕ Tambah Supplier</button>
+    </div>
+    <div id="gridSuppliers"></div>
+</div>
+
+<!-- HAPUS style="display:none;" -->
+<div id="dlgForm">
+    <input type="hidden" id="sId" />
+    <div class="form-group">
+        <label>Nama Perusahaan/Supplier</label>
+        <input id="sName" type="text" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+    </div>
+    <div class="form-row">
+        <div class="form-group">
+            <label>Contact Person</label>
+            <input id="sContact" type="text" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+        </div>
+        <div class="form-group">
+            <label>No. Telepon</label>
+            <input id="sPhone" type="text" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+        </div>
+    </div>
+    <div class="form-group">
+        <label>Alamat</label>
+        <textarea id="sAddress" rows="2" style="width:100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;"></textarea>
+    </div>
+</div>
+
+<script src="js/layout.js"></script>
+<script>
+$(function () {
+    renderLayout('suppliers', 'Manajemen Supplier', 'Daftar pemasok suku cadang');
+
+    var ds = new kendo.data.DataSource({
+        transport: {
+            read: function (opts) {
+                apiCall(API_URL + '/suppliers', 'GET', null, function(data) { opts.success(data); });
+            }
+        },
+        pageSize: 10,
+        schema: { model: { id: 'id' } }
+    });
+
+    $('#gridSuppliers').kendoGrid($.extend(defaultGridOptions(), {
+        dataSource: ds,
+        columns: [
+            { field: 'name', title: 'Nama Supplier', width: 200 },
+            { field: 'contactPerson', title: 'Contact Person', width: 150 },
+            { field: 'phone', title: 'Telepon', width: 130 },
+            { field: 'address', title: 'Alamat' },
+            { 
+                title: 'Aksi', width: 200, filterable: false, sortable: false,
+                template: '<button class="btn btn-primary btn-sm" onclick="editSupplier(#= id #, \'#= name #\', \'#= contactPerson || "" #\', \'#= phone || "" #\', \'#= address || "" #\')" style="margin-right:5px;">Edit</button>' +
+                          '<button class="btn btn-danger btn-sm" onclick="deleteSupplier(#= id #)">Hapus</button>'
+            }
+        ]
+    }));
+
+    var isEditMode = false;
+
+    var dlg = $('#dlgForm').kendoDialog({
+        title: 'Form Supplier',
+        width: 500,
+        modal: true,
+        visible: false,
+        actions: [
+            { text: 'Batal' },
+            { text: 'Simpan', primary: true, action: saveSupplier }
+        ]
+    }).data('kendoDialog');
+
+    $('#btnNew').on('click', function () {
+        isEditMode = false;
+        $('#dlgForm').data('kendoDialog').title('Tambah Supplier Baru');
+        $('#sId').val('');
+        $('#sName').val(''); 
+        $('#sContact').val(''); 
+        $('#sPhone').val(''); 
+        $('#sAddress').val('');
+        dlg.open();
+    });
+
+    function saveSupplier() {
+        var data = { 
+            name: $('#sName').val(), 
+            contactPerson: $('#sContact').val(), 
+            phone: $('#sPhone').val(),
+            address: $('#sAddress').val()
+        };
+        
+        if(!data.name) {
+            showToast('error', 'Nama Supplier wajib diisi');
+            return false;
+        }
+
+        var url = API_URL + '/suppliers';
+        var method = 'POST';
+
+        if (isEditMode) {
+            var id = $('#sId').val();
+            url += '/' + id;
+            method = 'PUT';
+        }
+
+        apiCall(url, method, data, function() {
+            showToast('success', isEditMode ? 'Supplier diperbarui' : 'Supplier ditambahkan');
+            ds.read();
+        }, function(err) {
+            showToast('error', err.responseJSON?.message || 'Gagal menyimpan data');
+        });
+
+        return true;
+    }
+
+    window.editSupplier = function(id, name, contact, phone, address) {
+        isEditMode = true;
+        $('#dlgForm').data('kendoDialog').title('Edit Supplier');
+        $('#sId').val(id);
+        $('#sName').val(name);
+        $('#sContact').val(contact);
+        $('#sPhone').val(phone);
+        $('#sAddress').val(address);
+        dlg.open();
+    };
+});
+
+window.deleteSupplier = function(id) {
+    if(confirm('Yakin ingin menghapus supplier ini?')) {
+        apiCall(API_URL + '/suppliers/' + id, 'DELETE', null, function() {
+            showToast('success', 'Supplier dihapus');
+            $('#gridSuppliers').data('kendoGrid').dataSource.read();
+        });
+    }
+}
+</script>
+</body>
+</html>

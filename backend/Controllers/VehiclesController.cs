@@ -1,11 +1,11 @@
 using Microsoft.AspNetCore.Mvc;
-using MitsubishiApi.Models;
-using MitsubishiApi.Data;
+using AutoPartsApi.Models;
+using AutoPartsApi.Data;
 using Microsoft.EntityFrameworkCore;
-using MitsubishiApi.Dtos;
+using AutoPartsApi.Dtos;
 using Microsoft.AspNetCore.Authorization;
 
-namespace MitsubishiApi.Controllers
+namespace AutoPartsApi.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
